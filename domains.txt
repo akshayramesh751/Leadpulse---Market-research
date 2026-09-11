@@ -1,0 +1,4 @@
+# SoftwareBrio Assignment Test Domains
+postman.com
+supabase.com
+vapi.ai

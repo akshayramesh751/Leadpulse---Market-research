@@ -1,0 +1,50 @@
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.uv/
+
+# Environment variables & secrets (CRITICAL)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Outputs & Generated data (artifacts, scrapings, screenshots, reports)
+outputs/
+logs/
+*.log
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.playwright/
+test-results/
+
+# Markdown documentation whitelist:
+# ONLY keep README.md, PHASEWISE_LOG.md, and 01_Roadmap.md (all other .md files ignored)
+*.md
+!README.md
+!PHASEWISE_LOG.md
+!01_Roadmap.md
+
+# IDE & Editor configs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini

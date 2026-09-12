@@ -27,8 +27,10 @@ for mod_name in [
     "agent.visual_extractor",
     "agent.firmographics",
     "agent.outreach_generator",
+    "agent.email_verifier",
     "agent.extractor",
     "agent.cost_tracker",
+    "agent.evaluator",
     "main",
 ]:
     if mod_name in sys.modules:
@@ -37,11 +39,13 @@ for mod_name in [
         except Exception:
             pass
 
+import plotly.graph_objects as go
 from config import settings
 from agent.discovery import normalize_domain
 from agent.fetcher import PlaywrightFetcher
 from agent.cost_tracker import CostTracker
 from agent.schemas import CompanyIntelligence
+from agent.evaluator import run_benchmark_suite, BenchmarkReport, BENCHMARK_FILE, EVAL_REPORT_FILE
 from main import process_domain
 
 # Configure page
@@ -137,10 +141,12 @@ st.markdown("""
         text-overflow: unset !important;
         word-break: break-word !important;
     }
-    div[data-testid="stMetricLabel"] > div {
+    div[data-testid="stMetricLabel"],
+    div[data-testid="stMetricLabel"] * {
         white-space: normal !important;
         overflow: visible !important;
         text-overflow: unset !important;
+        word-break: break-word !important;
         font-weight: 600 !important;
         color: #94a3b8 !important;
     }
@@ -215,11 +221,12 @@ with st.sidebar:
 # ==============================================================================
 # MAIN TABS
 # ==============================================================================
-tab_single, tab_batch, tab_archive, tab_analytics = st.tabs([
-    "🎯 Single Company Dossier",
+tab_single, tab_batch, tab_archive, tab_analytics, tab_benchmark = st.tabs([
+    "🏢 Single Company Dossier",
     "🚀 Batch Prospecting",
     "🗄️ Lead Archive & Export",
     "📊 Cost & Token Telemetry",
+    "🎯 Benchmark & Model Evaluation",
 ])
 
 
@@ -358,11 +365,26 @@ with tab_single:
                 st.write("No leadership team members identified on crawled pages.")
 
             # Direct Contact Channels (Emails & Phone Numbers)
-            st.markdown("### 📬 Direct Contact Channels")
+            st.markdown("### 📬 Direct Contact Channels & Deliverability")
             if intel.contact_emails:
-                st.markdown("**Verified Public Emails:**")
+                st.markdown("**Public Emails & Live Mailbox Deliverability:**")
+                verified_map = {v.get("email"): v for v in getattr(intel, "verified_emails", [])}
                 for email in intel.contact_emails:
-                    st.markdown(f"<a href='mailto:{email}' style='text-decoration:none;'><span class='email-pill'>✉️ {email}</span></a>", unsafe_allow_html=True)
+                    v_info = verified_map.get(email.lower(), {})
+                    is_deliv = v_info.get("is_deliverable", False)
+                    provider = v_info.get("mail_provider", "Verified")
+                    deliv_badge = (
+                        f"<span style='font-size:0.78rem; padding:3px 8px; border-radius:6px; background-color:#142e20; color:#86efac; border:1px solid #22c55e; margin-left:6px;'>🟢 Deliverable ({provider})</span>"
+                        if is_deliv
+                        else f"<span style='font-size:0.78rem; padding:3px 8px; border-radius:6px; background-color:#4a1515; color:#feb2b2; border:1px solid #e53e3e; margin-left:6px;'>🔴 {v_info.get('status', 'Unverified')}</span>"
+                    )
+                    st.markdown(
+                        f"<div style='margin-bottom:6px; display:flex; align-items:center; flex-wrap:wrap;'>"
+                        f"<a href='mailto:{email}' style='text-decoration:none;'><span class='email-pill'>✉️ {email}</span></a>"
+                        f"{deliv_badge}"
+                        f"</div>",
+                        unsafe_allow_html=True,
+                    )
             else:
                 st.caption("No public contact emails found on-page.")
 
@@ -373,6 +395,28 @@ with tab_single:
                     st.markdown(f"<a href='tel:{phone}' style='text-decoration:none;'><span class='phone-pill'>📞 {phone}</span></a>", unsafe_allow_html=True)
             else:
                 st.caption("No telephone numbers found on-page.")
+
+            # 1-Click Webhook Push to CRM / Zapier / Make
+            with st.expander("🔗 1-Click Webhook Push (HubSpot / Zapier / Make / Slack)"):
+                st.caption("Instantly dispatch this enriched intelligence record to an external webhook or CRM pipeline.")
+                wh_url = st.text_input("Webhook URL", placeholder="https://hooks.zapier.com/hooks/catch/...", key=f"wh_{norm_d}")
+                if st.button("🚀 Push Lead to Webhook", key=f"btn_wh_{norm_d}"):
+                    if wh_url and wh_url.startswith("http"):
+                        try:
+                            import urllib.request
+                            payload_bytes = json.dumps(intel.model_dump(mode="json")).encode("utf-8")
+                            req = urllib.request.Request(
+                                wh_url,
+                                data=payload_bytes,
+                                headers={"Content-Type": "application/json", "User-Agent": "LeadPulse-Agent/1.0"},
+                                method="POST",
+                            )
+                            with urllib.request.urlopen(req, timeout=10) as resp:
+                                st.success(f"Lead record successfully delivered! (HTTP {resp.status})")
+                        except Exception as e:
+                            st.error(f"Webhook dispatch failed: {e}")
+                    else:
+                        st.warning("Please specify a valid HTTP or HTTPS endpoint.")
 
             # Crawled Pages Detail
             with st.expander("🌐 Pages Crawled"):
@@ -580,7 +624,7 @@ with tab_analytics:
                     })
                 st.dataframe(
                     pd.DataFrame(domain_rows),
-                    use_container_width=True,
+                    width="stretch",
                     column_config={
                         "Agent Exact Cost": st.column_config.TextColumn("Agent Exact Cost", width="medium"),
                         "Naive Raw Cost": st.column_config.TextColumn("Naive Raw Cost", width="medium"),
@@ -592,4 +636,122 @@ with tab_analytics:
             st.error(f"Error reading cost report: {e}")
     else:
         st.info("No cost logs generated yet.")
+
+
+# ------------------------------------------------------------------------------
+# TAB 5: BENCHMARK & MODEL EVALUATION
+# ------------------------------------------------------------------------------
+with tab_benchmark:
+    st.header("🎯 Statistical Benchmark & Quality Evaluation Harness")
+    st.markdown(
+        "Evaluate LeadPulse extraction accuracy against a curated **Golden Dataset** representing "
+        "distinct corporate archetypes (Enterprise Developer Tools, Cloud Platforms, Local SMBs, and AI Startups). "
+        "Computes set-based **Precision, Recall, F1-Scores**, exact categorical matches, and hallucination rates."
+    )
+
+    col_bench_top, col_bench_btn = st.columns([3, 1])
+    with col_bench_top:
+        st.caption("Benchmark file: `benchmarks/golden_dataset.json` • Target Archetypes: 4 curated companies")
+    with col_bench_btn:
+        run_eval_btn = st.button("▶️ Execute Benchmark Suite", type="primary", use_container_width=True)
+
+    if run_eval_btn:
+        with st.status("Running LeadPulse Benchmark Suite across Golden Dataset...", expanded=True) as eval_status:
+            eval_status.write("Loading ground truth definitions from `benchmarks/golden_dataset.json`...")
+            eval_status.write("Launching headless Playwright cluster to crawl target domains...")
+            eval_status.write("Executing extraction, deliverability audits, and firmographic grounding...")
+            eval_status.write("Computing TP, FP, FN, Precision, Recall, F1, and Hallucination metrics...")
+            
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                bench_report = loop.run_until_complete(run_benchmark_suite())
+                eval_status.update(label="✅ Benchmark Suite Completed!", state="complete", expanded=False)
+                st.session_state["benchmark_report"] = bench_report.model_dump()
+                st.success("Benchmark completed! Metrics updated below.")
+            except Exception as e:
+                eval_status.update(label="❌ Benchmark execution error", state="error", expanded=True)
+                st.error(f"Benchmark error: {e}")
+
+    # Load report from session state or disk
+    report_data = None
+    if "benchmark_report" in st.session_state:
+        report_data = st.session_state["benchmark_report"]
+    elif EVAL_REPORT_FILE.exists():
+        try:
+            with open(EVAL_REPORT_FILE, "r", encoding="utf-8") as rf:
+                report_data = json.load(rf)
+        except Exception:
+            pass
+
+    if report_data:
+        # Top KPI Metric Cards
+        st.subheader("Statistical Macro Performance")
+        kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
+        kpi1.metric("Macro Precision", f"{report_data['macro_precision'] * 100:.1f}%", help="TP / (TP + FP) across all extracted entities")
+        kpi2.metric("Macro Recall", f"{report_data['macro_recall'] * 100:.1f}%", help="TP / (TP + FN) across all ground truth entities")
+        kpi3.metric("Macro F1-Score", f"{report_data['macro_f1'] * 100:.1f}%", help="Harmonic mean of precision and recall")
+        kpi4.metric("Firmographics Accuracy", f"{report_data['firmographic_accuracy'] * 100:.1f}%", help="Keyword/exact match on HQ and funding stage")
+        kpi5.metric("Zero Hallucination Rate", f"{(1.0 - report_data['hallucination_rate']) * 100:.1f}%", help="Absence of fabricated funding or entities")
+
+        kpi_sub1, kpi_sub2, kpi_sub3 = st.columns(3)
+        kpi_sub1.info(f"⏱️ **Average Latency / Domain:** `{report_data.get('average_latency_seconds', 0):.1f}s`")
+        kpi_sub2.success(f"💰 **Total Benchmark Cost:** `${report_data.get('total_cost_usd', 0):.5f} USD`")
+        kpi_sub3.info(f"🏛️ **Evaluated Companies:** `{report_data.get('total_domains_evaluated', 0)}` targets")
+
+        st.divider()
+
+        # Plotly Grouped Bar Chart of Precision, Recall, and F1 by Domain
+        st.subheader("📊 Domain-Level Performance Distribution")
+        eval_list = report_data.get("domain_evaluations", [])
+        if eval_list:
+            domain_names = [e["domain"] for e in eval_list]
+            emails_f1 = [e["emails_metrics"]["f1_score"] * 100 for e in eval_list]
+            phones_f1 = [e["phones_metrics"]["f1_score"] * 100 for e in eval_list]
+            leaders_f1 = [e["leadership_metrics"]["f1_score"] * 100 for e in eval_list]
+
+            fig = go.Figure(data=[
+                go.Bar(name="Emails F1", x=domain_names, y=emails_f1, marker_color="#3b82f6"),
+                go.Bar(name="Phones F1", x=domain_names, y=phones_f1, marker_color="#10b981"),
+                go.Bar(name="Leadership F1", x=domain_names, y=leaders_f1, marker_color="#8b5cf6"),
+            ])
+            fig.update_layout(
+                barmode="group",
+                title="Entity Extraction F1-Scores by Domain (%)",
+                yaxis=dict(title="F1-Score (%)", range=[0, 105]),
+                xaxis=dict(title="Target Domain"),
+                template="plotly_dark",
+                height=380,
+                margin=dict(l=40, r=40, t=50, b=40),
+            )
+            st.plotly_chart(fig, width="stretch")
+
+        # Ground Truth vs Prediction Comparison Table
+        st.subheader("🔍 Ground Truth vs. Agent Prediction Breakdown")
+        table_rows = []
+        for e in eval_list:
+            table_rows.append({
+                "Domain": e["domain"],
+                "Category": e.get("category", "N/A"),
+                "Emails (P / R / F1)": f"{int(e['emails_metrics']['precision']*100)}% / {int(e['emails_metrics']['recall']*100)}% / {int(e['emails_metrics']['f1_score']*100)}%",
+                "Phones (P / R / F1)": f"{int(e['phones_metrics']['precision']*100)}% / {int(e['phones_metrics']['recall']*100)}% / {int(e['phones_metrics']['f1_score']*100)}%",
+                "Leaders (P / R / F1)": f"{int(e['leadership_metrics']['precision']*100)}% / {int(e['leadership_metrics']['recall']*100)}% / {int(e['leadership_metrics']['f1_score']*100)}%",
+                "HQ Matched": "✅ Yes" if e["hq_matched"] else "❌ No",
+                "Funding Matched": "✅ Yes" if e["funding_matched"] else "❌ No",
+                "Latency": f"{e.get('latency_seconds', 0):.1f}s",
+                "Unit Cost": f"${e.get('estimated_cost_usd', 0):.5f}",
+            })
+        st.dataframe(pd.DataFrame(table_rows), width="stretch")
+
+        with st.expander("📚 Evaluation Methodology & Mathematical Definitions"):
+            st.markdown("""
+            ### Mathematical Metric Formulation
+            - **Set Precision**: $TP / (TP + FP)$ — ratio of correctly extracted items to total predicted items.
+            - **Set Recall**: $TP / (TP + FN)$ — ratio of correctly extracted items to total ground truth items.
+            - **F1-Score**: $2 \\times (Precision \\times Recall) / (Precision + Recall)$ — harmonic balance of completeness and precision.
+            - **True Negative Handling**: If ground truth and prediction are both empty (e.g. no phone number exists on page), score is recorded as $1.0$ (100% agreement).
+            - **Hallucination Detection**: Flags assertions (e.g. Series B funding) made without source verification on bootstrapped/SMB companies.
+            """)
+    else:
+        st.info("No benchmark evaluation report generated yet. Click 'Execute Benchmark Suite' above to run the evaluation.")
 

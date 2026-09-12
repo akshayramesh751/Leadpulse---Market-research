@@ -28,6 +28,7 @@ from agent.cost_tracker import CostTracker
 from agent.tech_detector import detect_technologies
 from agent.firmographics import enrich_firmographics
 from agent.outreach_generator import generate_outreach_hooks
+from agent.email_verifier import verify_emails
 
 console = Console()
 
@@ -155,6 +156,14 @@ async def process_domain(
             intel.phone_numbers = list(deduped_phones.values())
         except Exception:
             pass
+
+        # Zero-Bounce Deliverability Audit: resolve DNS MX records
+        if intel.contact_emails:
+            logger.info(f"[{clean_domain}] Auditing email deliverability via DNS MX resolution...")
+            try:
+                intel.verified_emails = await verify_emails(intel.contact_emails)
+            except Exception as e:
+                logger.debug(f"Email deliverability check error: {e}")
 
         intel.technologies_detected = techs_detected
         intel.screenshot_path = screenshot_path

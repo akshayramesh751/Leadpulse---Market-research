@@ -1,0 +1,130 @@
+[
+  {
+    "domain": "saankhya.academy",
+    "company_name": "Saankhya Academy",
+    "category": "SMB / Education & Tutoring",
+    "ground_truth": {
+      "contact_emails": [
+        "admin@saankhya.academy"
+      ],
+      "phone_numbers": [
+        "+91 93807 38490"
+      ],
+      "key_leadership": [
+        "Akshay Ramesh"
+      ],
+      "headquarters_keywords": [
+        "Bengaluru",
+        "Bangalore",
+        "Karnataka",
+        "India"
+      ],
+      "funding_stage_keywords": [
+        "Private",
+        "Self-funded",
+        "Bootstrapped"
+      ],
+      "technologies_keywords": [
+        "Tailwind CSS"
+      ]
+    }
+  },
+  {
+    "domain": "supabase.com",
+    "company_name": "Supabase",
+    "category": "Enterprise Developer Tools / Open Source",
+    "ground_truth": {
+      "contact_emails": [
+        "sales@supabase.com",
+        "press@supabase.com"
+      ],
+      "phone_numbers": [],
+      "key_leadership": [
+        "Paul Copplestone",
+        "Ant Wilson",
+        "Tracy Lane",
+        "Jakob Steinn"
+      ],
+      "headquarters_keywords": [
+        "San Francisco",
+        "California",
+        "USA",
+        "Global / Remote"
+      ],
+      "funding_stage_keywords": [
+        "Series B",
+        "Series C",
+        "Series A",
+        "Funded"
+      ],
+      "technologies_keywords": [
+        "Next.js",
+        "Tailwind CSS",
+        "React"
+      ]
+    }
+  },
+  {
+    "domain": "postman.com",
+    "company_name": "Postman",
+    "category": "Enterprise SaaS / API Platform",
+    "ground_truth": {
+      "contact_emails": [
+        "help@postman.com",
+        "security@postman.com"
+      ],
+      "phone_numbers": [],
+      "key_leadership": [
+        "Abhinav Asthana",
+        "Ankit Sobti",
+        "Abhijit Kane"
+      ],
+      "headquarters_keywords": [
+        "San Francisco",
+        "California",
+        "USA",
+        "Bengaluru"
+      ],
+      "funding_stage_keywords": [
+        "Series D",
+        "Series C",
+        "Series B",
+        "Funded"
+      ],
+      "technologies_keywords": [
+        "React",
+        "Webpack"
+      ]
+    }
+  },
+  {
+    "domain": "vapi.ai",
+    "company_name": "Vapi",
+    "category": "Voice AI / Developer Infrastructure",
+    "ground_truth": {
+      "contact_emails": [],
+      "phone_numbers": [],
+      "key_leadership": [
+        "Jordan Newman",
+        "Jason Mitura"
+      ],
+      "headquarters_keywords": [
+        "San Francisco",
+        "California",
+        "USA",
+        "United States",
+        "Global / Remote"
+      ],
+      "funding_stage_keywords": [
+        "Seed",
+        "Series A",
+        "Private",
+        "Funded"
+      ],
+      "technologies_keywords": [
+        "Next.js",
+        "Tailwind CSS"
+      ]
+    }
+  }
+]

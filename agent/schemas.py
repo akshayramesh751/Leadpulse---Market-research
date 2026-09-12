@@ -82,3 +82,4 @@ class CompanyIntelligence(BaseModel):
     prompt_tokens: Optional[int] = Field(default=None, description="Tokens in the extraction prompt")
     completion_tokens: Optional[int] = Field(default=None, description="Tokens in the model completion")
     estimated_cost_usd: Optional[float] = Field(default=None, description="Calculated API cost in USD")
+    verified_emails: List[dict] = Field(default_factory=list, description="Zero-bounce deliverability audit results with DNS MX records")

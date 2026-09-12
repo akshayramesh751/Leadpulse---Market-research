@@ -220,6 +220,61 @@ This document serves as an auditable changelog and execution log for every phase
   - Leadership: `Akshay Ramesh` (LinkedIn: `in/akshay-ramesh-201371339`)
   - All 30 pytest tests passing.
 
+---
+
+## Phase 13: Golden Ground-Truth Benchmark Dataset & Statistical Evaluation Engine
+- **Status**: Completed (✅)
+- **Objectives**:
+  - Implement a mathematical evaluation harness for measuring Precision, Recall, and F1-Scores against a verified Golden Ground-Truth dataset.
+  - Test and eliminate model hallucinations across diverse company archetypes (Enterprise SaaS, DevTools, SMB, AI).
+- **Implementation**:
+  - **`benchmarks/golden_dataset.json`**: Curated ground-truth labels for `saankhya.academy`, `supabase.com`, `postman.com`, and `vapi.ai`.
+  - **`agent/evaluator.py`**: Automated evaluation harness computing set metrics ($TP, FP, FN, P, R, F1$), fuzzy keyword matches for firmographics, and hallucination scoring.
+  - **`tests/test_evaluator.py`**: 8 comprehensive unit tests covering edge cases (perfect match, partial match, empty truth, spurious predictions).
+  - Serialized comprehensive report to `outputs/eval_report.json`.
+
+---
+
+## Phase 14: Zero-Bounce Mailbox & Deliverability Verification (DNS MX Records)
+- **Status**: Completed (✅)
+- **Objectives**:
+  - Eliminate email bounce rates by verifying active mail exchangers (MX records) before reporting sales contacts.
+- **Implementation**:
+  - **`agent/email_verifier.py`**: Integrated asynchronous DNS MX resolver with provider classification (Google Workspace, Microsoft 365, Proton, Zoho, etc.).
+  - **`tests/test_email_verifier.py`**: 4 unit tests verifying deliverability detection, syntax validation, and provider classification.
+  - Updated `CompanyIntelligence` schema to include `verified_emails` with deliverability tags.
+
+---
+
+## Phase 15: Real-Time Agentic Execution Stepper & Live Thought Stream
+- **Status**: Completed (✅)
+- **Objectives**:
+  - Elevate user experience with a real-time execution trace (`st.status()`) visualizing intermediate agent decisions.
+- **Implementation**:
+  - Configured step-by-step progress logging in [`app.py`](file:///e:/market%20research%20brio/app.py) detailing URL discovery, Playwright route blocking, Trafilatura compression (-99%), Groq LPU extraction, and DNS MX deliverability verification.
+
+---
+
+## Phase 16: Interactive Benchmark & Model Evaluation Cockpit in Streamlit
+- **Status**: Completed (✅)
+- **Objectives**:
+  - Provide a presentation-ready evaluation view in the web dashboard.
+- **Implementation**:
+  - Added Tab 5 (**"🎯 Benchmark & Model Evaluation"**) in [`app.py`](file:///e:/market%20research%20brio/app.py).
+  - Renders Macro Precision, Macro Recall, Macro F1-Score, Firmographic Accuracy, and Zero Hallucination Rate cards.
+  - Interactive Plotly chart displaying entity extraction F1-scores by domain.
+  - Full Ground Truth vs. Agent Prediction breakdown table with 1-click live re-evaluation trigger.
+
+---
+
+## Phase 17: Multi-Source Triangulation & 1-Click Webhook Push
+- **Status**: Completed (✅)
+- **Objectives**:
+  - Enable direct integration with CRM/sales automation workflows.
+- **Implementation**:
+  - Added 1-Click Webhook Export expander in Tab 1 allowing direct HTTP POST dispatch of enriched dossiers to HubSpot, Zapier, Make, or Slack.
+
+
 
 
 

@@ -21,6 +21,8 @@ dependencies = [
     "tiktoken>=0.8.0",
     "streamlit>=1.40.0",
     "pillow>=10.0.0",
+    "dnspython>=2.8.0",
+    "plotly>=7.0.0",
 ]
 
 [project.optional-dependencies]
